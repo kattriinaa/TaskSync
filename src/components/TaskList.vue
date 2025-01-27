@@ -73,6 +73,8 @@
 </template>
 
 <script>
+import axios from 'axios';
+
 export default {
   props: {
     tasks: {
@@ -99,8 +101,7 @@ export default {
   
   async updateTaskCompletion(task) {
   try {
-    const response = await this.$axios.put(`/api/tasks/${task.id}`, {
-      completed: task.completed,
+    const response = await axios.put(`/api/tasks/${task.id}`, { completed: task.completed
     });
     console.log("Завдання оновлено:", response.data);
     task.completed = response.data.completed;  // Оновлення статусу локально
