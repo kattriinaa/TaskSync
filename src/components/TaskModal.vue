@@ -93,28 +93,28 @@ export default {
       // Еміт події save з даними:
       console.log("Еміт події save з даними:", this.localTask);
       this.$emit("save", this.localTask);
+      this.$emit("close");
     },
 
     async syncTaskToBackend(task) {
-      try {
-        // Запит до бекенду для синхронізації
-        const response = await axios.post('http://localhost:5000/sync-task', task);
-        console.log(response.data.message);
-        
-        // Сповіщення про успішну синхронізацію
-        alert('Задача успішно синхронізована з Trello!');
-        
-        // Оновлення списку завдань після успіху
-        await this.getUpdatedTasks();  // Оновлюємо завдання після синхронізації
+  try {
+    // Виклик axios без збереження результату в змінну
+    await axios.post('http://localhost:5000/sync-task', task);
 
-        // Сповіщаємо батьківський компонент про завершення синхронізації
-        this.$emit("syncCompleted");
-      } catch (error) {
-        // Обробка помилки синхронізації
-        console.error('Не вдалося синхронізувати задачу:', error);
-        alert('Не вдалося синхронізувати задачу з Trello.');
-      }
-    },
+    // Успішна синхронізація
+    alert('Задача успішно синхронізована з Trello!');
+    this.$emit("close"); // Закриваємо модальне вікно
+    await this.getUpdatedTasks();
+    this.$emit("syncCompleted");
+  } catch (error) {
+    if (error.response && error.response.status === 400 && error.response.data.error) {
+      alert(error.response.data.error + " Будь ласка, змініть заголовок завдання.");
+    } else {
+      console.error('Не вдалося синхронізувати задачу:', error);
+      alert('Не вдалося синхронізувати задачу з Trello.');
+    }
+  }
+},
 
     // Метод для отримання оновлених завдань після синхронізації
     async getUpdatedTasks() {

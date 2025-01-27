@@ -48,13 +48,14 @@ def get_tasks():
 
 # Ендпоінт для додавання нового завдання
 @app.route('/api/tasks', methods=['POST'])
-@cross_origin()  # Додаємо CORS для цього ендпоінта
+@cross_origin()
 def add_task():
     task = request.json
+    app.logger.info(f"Received task data: {task}")
     if not task or not task.get("title"):
+        app.logger.error("Invalid task data")
         return jsonify({"error": "Invalid task data"}), 400
 
-    # Формування нового завдання
     new_task = {
         "title": task["title"],
         "description": task.get("description", ""),
@@ -62,24 +63,24 @@ def add_task():
         "priority": task.get("priority", "Medium"),
         "completed": False,
     }
+    app.logger.info(f"New task to process: {new_task}")
 
-    # Перевірка, чи завдання вже синхронізовано
     existing_task = tasks_collection.find_one({"title": new_task["title"], "description": new_task["description"]})
+    app.logger.info(f"Existing task: {existing_task}")
     if existing_task and "trello_task_id" in existing_task:
         return jsonify({"error": "Task already exists and is synced with Trello"}), 400
 
-    # Синхронізація з Trello
     trello_response = sync_task_to_trello(new_task)
+    app.logger.info(f"Trello response: {trello_response}")
     if trello_response.get("error"):
         return jsonify(trello_response), 500
 
-    # Додавання Trello ID
     new_task["trello_task_id"] = trello_response.get("id")
 
-    # Збереження у базу даних
     try:
         result = tasks_collection.insert_one(new_task)
-        new_task["_id"] = result.inserted_id
+        new_task["_id"] = str(result.inserted_id)
+        app.logger.info(f"Task successfully saved: {new_task}")
         return jsonify(serialize_task(new_task)), 201
     except Exception as e:
         app.logger.error(f"Error saving task to MongoDB: {str(e)}")
