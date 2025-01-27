@@ -1,16 +1,10 @@
 <template>
-  <div>
-    <!-- Фільтрація завдань -->
-    <div class="filters">
-      <button @click="filterTasks('all')" :class="{'active': currentFilter === 'all'}">Всі</button>
-      <button @click="filterTasks('completed')" :class="{'active': currentFilter === 'completed'}">Виконані</button>
-      <button @click="filterTasks('important')" :class="{'active': currentFilter === 'important'}">Важливі</button>
-    </div>
-
-    <!-- Список завдань -->
-    <div class="task-list">
+  <div class="task-board">
+    <!-- Стовпці для завдань -->
+    <div class="column">
+      <h2>Do</h2>
       <div
-        v-for="task in filteredTasks"
+        v-for="task in todoTasks"
         :key="task.id"
         class="task-card"
         :class="{ completed: task.completed, important: task.priority === 'High' }"
@@ -20,7 +14,52 @@
         <p>{{ task.description }}</p>
         <small>Дата: {{ task.due_date }}</small>
 
-        <!-- Галочка для позначки виконаного завдання -->
+        <div class="checkbox-container" @click.stop="toggleTaskCompletion(task)">
+          <input 
+            type="checkbox" 
+            v-model="task.completed" 
+            @change="updateTaskCompletion(task)" 
+          />
+        </div>
+      </div>
+    </div>
+
+    <div class="column">
+      <h2>Important</h2>
+      <div
+        v-for="task in importantTasks"
+        :key="task.id"
+        class="task-card"
+        :class="{ completed: task.completed, important: task.priority === 'High' }"
+        @click="$emit('openTask', task)"
+      >
+        <h3>{{ task.title }}</h3>
+        <p>{{ task.description }}</p>
+        <small>Дата: {{ task.due_date }}</small>
+
+        <div class="checkbox-container" @click.stop="toggleTaskCompletion(task)">
+          <input 
+            type="checkbox" 
+            v-model="task.completed" 
+            @change="updateTaskCompletion(task)" 
+          />
+        </div>
+      </div>
+    </div>
+
+    <div class="column">
+      <h2>Done</h2>
+      <div
+        v-for="task in doneTasks"
+        :key="task.id"
+        class="task-card"
+        :class="{ completed: task.completed, important: task.priority === 'High' }"
+        @click="$emit('openTask', task)"
+      >
+        <h3>{{ task.title }}</h3>
+        <p>{{ task.description }}</p>
+        <small>Дата: {{ task.due_date }}</small>
+
         <div class="checkbox-container" @click.stop="toggleTaskCompletion(task)">
           <input 
             type="checkbox" 
@@ -41,38 +80,24 @@ export default {
       required: true,
     },
   },
-  data() {
-    return {
-      currentFilter: 'all', // Стартовий фільтр "Всі"
-    };
-  },
   computed: {
-    // Фільтрація завдань залежно від обраного фільтру
-    filteredTasks() {
-      switch (this.currentFilter) {
-        case 'completed':
-          return this.tasks.filter((task) => task.completed);
-        case 'important':
-          return this.tasks.filter((task) => task.priority === 'High');
-        default:
-          return this.tasks; // Повертає всі завдання, якщо фільтр "all"
-      }
+    todoTasks() {
+      return this.tasks.filter((task) => !task.completed && task.priority !== 'High');
+    },
+    importantTasks() {
+      return this.tasks.filter((task) => task.priority === 'High' && !task.completed);
+    },
+    doneTasks() {
+      return this.tasks.filter((task) => task.completed);
     },
   },
   methods: {
-    // Змінити фільтр
-    filterTasks(filter) {
-      this.currentFilter = filter;
-    },
-    // Перемикання виконаного стану завдання
     toggleTaskCompletion(task) {
       task.completed = !task.completed;
     },
-    // Оновлення статусу виконаного завдання на сервері
     async updateTaskCompletion(task) {
       try {
-        // Наприклад, оновлюємо статус виконаного завдання на сервері
-        await this.$emit('updateTaskCompletion', task); // Ви можете передати task на сервер для оновлення
+        await this.$emit('updateTaskCompletion', task);
         console.log("Завдання оновлено:", task);
       } catch (error) {
         console.error("Не вдалося оновити завдання:", error);
@@ -82,118 +107,112 @@ export default {
 };
 </script>
 
-
 <style scoped>
-/* Додаємо стилі для фільтрів */
-.filters {
+/* Глобальні стилі для body або html для прокрутки */
+html, body {
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden; /* Приховує горизонтальну прокрутку */
+  overflow-y: auto; /* Дозволяє вертикальну прокрутку */
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box; /* Враховує padding у розмірах */
+}
+
+/* Основні стилі для дошки завдань */
+.task-board {
   display: flex;
-  justify-content: flex-start; /* Починаємо зліва */
-  gap: 20px; /* Відстань між кнопками */
-  padding: 17px;
-  margin-left: 11px;
-}
-
-.filters button {
-  padding: 13px 25px;
-  background: linear-gradient(135deg, #6a11cb, #2575fc); /* Градієнтний фон кнопок */
-  color: white;
-  border: none; /* Прибираємо рамки */
-  border-radius: 30px; /* Закруглені краї кнопок */
-  font-size: 16px;
-  font-weight: bold;
-  cursor: pointer;
-  transition: transform 0.3s, box-shadow 0.3s, background 0.3s;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-}
-
-.filters button:hover {
-  transform: translateY(-5px); /* Легкий підйом кнопки */
-  background: linear-gradient(135deg, #2575fc, #6a11cb); /* Зміна градієнта */
-  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15); /* Підсилюємо тінь */
-}
-
-.filters button:active {
-  transform: translateY(1px); /* Кнопка "опускається" при натисканні */
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* Легша тінь при натисканні */
-}
-
-/* Активний стан кнопок */
-.filters button.active {
-  background: linear-gradient(135deg, #2575fc, #6a11cb);
-  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
-}
-
-/* Стилі для завдань */
-.task-list {
-  display: flex;
-  flex-wrap: wrap;
+  justify-content: space-between;
   gap: 20px;
-  justify-content: flex-start; /* Починаємо зліва */
-  padding: 10px;
-  margin-left: 17px;
+  padding: 20px;
+  width: calc(100vw - 60px); /* Враховує простір для кнопок */
+  min-height: calc(100vh - 80px); /* Мінімальна висота для адаптації контенту */
+  box-sizing: border-box; /* Враховує padding у розмірах */
+  align-items: flex-start; /* Стовпці вирівняні по верху */
 }
 
-/* Сучасна картка завдання */
+/* Стилі для кожного стовпця */
+.column {
+  flex: 1; /* Рівномірний розподіл ширини */
+  background-color: #f8f9fa;
+  border-radius: 10px;
+  padding: 15px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  min-width: 280px; /* Мінімальна ширина */
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  box-sizing: border-box; /* Враховує padding */
+  overflow: visible; /* Вміст не обрізається */
+}
+
+/* Заголовки стовпців */
+.column h2 {
+  text-align: center;
+  font-size: 20px;
+  font-weight: bold;
+  margin-bottom: 15px;
+}
+
+/* Картка завдання */
 .task-card {
-  position: relative; /* Для позиціонування внутрішніх елементів */
-  width: 300px;
-  padding: 20px;
-  background: linear-gradient(145deg, #ffffff, #f1f1f1); /* Сучасний світлий фон */
-  border-radius: 13px;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1), inset 0 1px 3px rgba(255, 255, 255, 0.5);
+  position: relative;
+  padding: 15px;
+  background: linear-gradient(145deg, #ffffff, #f1f1f1);
+  border-radius: 10px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+  margin-bottom: 15px;
   cursor: pointer;
   transition: transform 0.3s, box-shadow 0.3s;
 }
 
-/* Ефект при наведенні */
 .task-card:hover {
   transform: translateY(-5px);
-  box-shadow: 0 6px 15px rgba(0, 0, 0, 0.15), inset 0 1px 3px rgba(255, 255, 255, 0.5);
+  box-shadow: 0 6px 15px rgba(0, 0, 0, 0.15);
 }
 
-/* Завершене завдання */
+/* Стилі для виконаних завдань */
 .task-card.completed {
-  background: linear-gradient(145deg, #dff8e1, #cce6d7); /* Світло-зелений градієнт */
+  background: linear-gradient(145deg, #dff8e1, #cce6d7);
 }
 
-/* Важливе завдання */
+/* Стилі для важливих завдань */
 .task-card.important {
-  border: 2px solid #ffc107; /* Яскрава рамка */
-  box-shadow: 0 4px 12px rgba(255, 193, 7, 0.3); /* Жовта тінь */
+  border: 2px solid #ffc107;
+  box-shadow: 0 4px 12px rgba(255, 193, 7, 0.3);
 }
 
-/* Сучасний стиль для галочки */
+/* Стилі для галочки */
 .checkbox-container {
   position: absolute;
-  bottom: 10px; /* Вирівнювання по нижньому краю */
-  right: 10px; /* Вирівнювання по правому краю */
-  cursor: pointer; /* Додаємо курсор для взаємодії */
-  visibility: hidden; /* Спочатку приховано */
+  bottom: 10px;
+  right: 10px;
+  cursor: pointer;
+  visibility: hidden;
 }
 
 .task-card:hover .checkbox-container {
-  visibility: visible; /* Показуємо галочку при наведенні на картку */
+  visibility: visible;
 }
 
 .checkbox-container input[type="checkbox"] {
-  width: 24px; /* Більший розмір галочки */
+  width: 24px;
   height: 24px;
-  border-radius: 50%; /* Робимо галочку круглою */
-  appearance: none; /* Відключаємо стандартне оформлення */
-  border: 2px solid #007bff; /* Додаємо обводку */
-  background-color: white; /* Білий фон */
+  border-radius: 50%;
+  appearance: none;
+  border: 2px solid #007bff;
+  background-color: white;
   cursor: pointer;
   transition: all 0.3s ease;
 }
 
-/* Вибрана галочка */
 .checkbox-container input[type="checkbox"]:checked {
-  background: linear-gradient(135deg, #007bff, #2575fc); /* Градієнтна заливка */
-  border-color: #2575fc; /* Колір обводки */
+  background: linear-gradient(135deg, #007bff, #2575fc);
+  border-color: #2575fc;
 }
 
 .checkbox-container input[type="checkbox"]:checked::before {
-  content: '✔'; /* Додаємо галочку */
+  content: '✔';
   position: absolute;
   top: 3px;
   left: 6px;
