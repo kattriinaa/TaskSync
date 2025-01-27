@@ -80,9 +80,6 @@ export default {
       localStorage.setItem('isAuthenticated', 'true');
       this.fetchTasks();
       this.fetchTrelloTasks();
-    },
-    toggleTheme() {
-    this.isDarkMode = !this.isDarkMode; // Перемикає стан теми
   },
     // Відкриття/закриття меню
     toggleMenu(event) {
@@ -200,13 +197,18 @@ export default {
       priority: 'Medium',
     }));
 
-    this.tasks = [...this.tasks, ...formattedTasks];
+    // Додаємо лише нові завдання, яких ще немає в this.tasks
+    this.tasks = [
+      ...this.tasks.filter(task => !formattedTasks.some(newTask => newTask.id === task.id)),
+      ...formattedTasks
+    ];
     this.filteredTasks = this.tasks;
   } catch (error) {
     console.error('Помилка при синхронізації завдань з Trello:', error);
   }
   this.isMenuVisible = false;
 },
+
 closeMenuOnOutsideClick(event) {
       const menu = this.$refs.menu;
       if (menu && !menu.contains(event.target) && this.isMenuVisible) {
