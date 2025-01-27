@@ -1,6 +1,6 @@
 <template>
   <div class="login-container">
-    <h1>Login In</h1>
+    <h1>Log In</h1>
     <form @submit.prevent="loginHandler">
       <input type="text" v-model="credentials.username" placeholder="Username" required />
       <input type="password" v-model="credentials.password" placeholder="Password" required />

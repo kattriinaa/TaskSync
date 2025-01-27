@@ -92,18 +92,23 @@ export default {
     },
   },
   methods: {
-    toggleTaskCompletion(task) {
-      task.completed = !task.completed;
-    },
-    async updateTaskCompletion(task) {
-      try {
-        await this.$emit('updateTaskCompletion', task);
-        console.log("Завдання оновлено:", task);
-      } catch (error) {
-        console.error("Не вдалося оновити завдання:", error);
-      }
-    },
+  toggleTaskCompletion(task) {
+    task.completed = !task.completed;
+    this.updateTaskCompletion(task);
   },
+  
+  async updateTaskCompletion(task) {
+  try {
+    const response = await this.$axios.put(`/api/tasks/${task.id}`, {
+      completed: task.completed,
+    });
+    console.log("Завдання оновлено:", response.data);
+    task.completed = response.data.completed;  // Оновлення статусу локально
+  } catch (error) {
+    console.error("Не вдалося оновити завдання:", error);
+  }
+}
+},
 };
 </script>
 

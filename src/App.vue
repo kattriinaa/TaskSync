@@ -6,11 +6,11 @@
     <!-- Головний екран -->
     <div v-else>
       <!-- Екран вітання -->
-    <div v-if="!hasVisited" class="welcome-screen">
-    <h1>Welcome to TaskSync!</h1>
-    <p>TaskSync is your perfect planner for organizing tasks and syncing with Trello.</p>
-    <button class="welcome-btn" @click="closeWelcome">Go to Planner</button>
-  </div>
+      <div v-if="!hasVisited" class="welcome-screen">
+        <h1>Welcome to TaskSync!</h1>
+        <p>TaskSync is your perfect planner for organizing tasks and syncing with Trello.</p>
+        <button class="welcome-btn" @click="closeWelcome">Go to Planner</button>
+      </div>
 
       <!-- Основний контент після вітання -->
       <div v-else class="main-container">
@@ -30,7 +30,7 @@
         <!-- Список завдань -->
         <div class="task-content">
           <TaskList
-            :tasks="tasks"
+            :tasks="filteredTasks"
             :filterCriteria="filterCriteria"
             @openTask="openTask"
             @showAddModal="showAddTaskModal"
@@ -52,7 +52,6 @@
   </div>
 </template>
 
-
 <script>
 import LoginForm from './components/LoginForm.vue';
 import TaskList from './components/TaskList.vue';
@@ -63,15 +62,14 @@ export default {
   data() {
     return {
       isAuthenticated: localStorage.getItem('isAuthenticated') === 'true',
-      hasVisited: false, // Завжди показуємо вітальну сторінку      
+      hasVisited: localStorage.getItem('hasVisited') === 'true', // Check if the user has visited the planner before
       tasks: [],
       filteredTasks: [],
       showModal: false,
       currentTask: null,
       modalMode: 'add',
-      isMenuVisible: false, // Додаємо новий стан для видимості меню
+      isMenuVisible: false,
       filterCriteria: {},
-      isDarkMode: false
     };
   },
   methods: {
@@ -80,37 +78,43 @@ export default {
       localStorage.setItem('isAuthenticated', 'true');
       this.fetchTasks();
       this.fetchTrelloTasks();
-  },
-    // Відкриття/закриття меню
-    toggleMenu(event) {
-      // Якщо клікнули на саму кнопку меню, то переключаємо стан видимості
-      this.isMenuVisible = !this.isMenuVisible;
-      event.stopPropagation(); // Запобігаємо закриттю меню при натисканні на кнопку
+      this.hasVisited = false; // Reset hasVisited so the welcome screen shows after login
+      localStorage.removeItem('hasVisited'); // Clear the previous "hasVisited" state
     },
+
+    toggleMenu(event) {
+      this.isMenuVisible = !this.isMenuVisible;
+      event.stopPropagation();
+    },
+
     logout() {
       this.isAuthenticated = false;
       localStorage.removeItem('isAuthenticated');
+      this.hasVisited = false; // Ensure that after logout, welcome screen shows again
+      localStorage.removeItem('hasVisited');
     },
+
     closeWelcome() {
-      this.hasVisited = true; // Закриваємо вітальну сторінку
-    },
-    navigateToPlanner() {
       this.hasVisited = true;
-      localStorage.setItem('hasVisited', 'true'); // Зберігаємо стан, щоб не показувати головний екран знову
+      localStorage.setItem('hasVisited', 'true');
     },
+
     showAddTaskModal() {
       this.modalMode = 'add';
       this.currentTask = null;
       this.showModal = true;
     },
+
     openTask(task) {
       this.modalMode = 'edit';
       this.currentTask = task;
       this.showModal = true;
     },
+
     closeModal() {
       this.showModal = false;
     },
+
     async fetchTasks() {
       try {
         const response = await fetch('/api/tasks');
@@ -121,8 +125,8 @@ export default {
         console.error('Error fetching tasks:', error);
       }
     },
+
     async saveTask(task) {
-      console.log('Дані для збереження:', task);
       try {
         let response, newTask;
 
@@ -136,10 +140,8 @@ export default {
           if (!response.ok) throw new Error('Failed to add task');
 
           newTask = await response.json();
-          console.log('Додана задача:', newTask);
           this.tasks.push(newTask);
 
-          // Синхронізація з Trello, якщо вибрано чекбокс
           if (task.syncToTrello) {
             await this.syncTaskToTrello(newTask);
           }
@@ -159,9 +161,10 @@ export default {
         this.filteredTasks = this.tasks;
         this.showModal = false;
       } catch (error) {
-        console.error('Помилка під час збереження завдання:', error);
+        console.error('Error saving task:', error);
       }
     },
+
     async deleteTask(task) {
       try {
         await fetch(`/api/tasks/${task.id}`, { method: 'DELETE' });
@@ -172,78 +175,82 @@ export default {
         console.error('Error deleting task:', error);
       }
     },
+
     filterTasks(filterType) {
       if (filterType === 'all') {
-        this.filteredTasks = this.tasks; // Показуємо всі завдання
+        this.filteredTasks = this.tasks;
       } else if (filterType === 'important') {
         this.filteredTasks = this.tasks.filter(task => task.priority === 'High');
       } else if (filterType === 'completed') {
         this.filteredTasks = this.tasks.filter(task => task.completed);
       }
     },
+
     async fetchTrelloTasks(listId) {
-  try {
-    const response = await fetch(`/api/trello/tasks/${listId}`); // Передаємо listId через URL
-    if (!response.ok) throw new Error('Failed to fetch tasks from Trello');
+      try {
+        const response = await fetch(`/api/trello/tasks/${listId}`);
+        if (!response.ok) throw new Error('Failed to fetch tasks from Trello');
 
-    const trelloTasks = await response.json();
-    console.log('Отримані завдання з Trello:', trelloTasks);
+        const trelloTasks = await response.json();
+        const formattedTasks = trelloTasks.map(trelloTask => ({
+          id: trelloTask.id,
+          title: trelloTask.name,
+          description: trelloTask.desc || '',
+          due_date: trelloTask.due || null,
+          priority: 'Medium',
+        }));
 
-    const formattedTasks = trelloTasks.map(trelloTask => ({
-      id: trelloTask.id,
-      title: trelloTask.name,
-      description: trelloTask.desc || '',
-      due_date: trelloTask.due || null,
-      priority: 'Medium',
-    }));
+        this.tasks = [
+          ...this.tasks.filter(task => !formattedTasks.some(newTask => newTask.id === task.id)),
+          ...formattedTasks
+        ];
+        this.filteredTasks = this.tasks;
+      } catch (error) {
+        console.error('Error syncing tasks from Trello:', error);
+      }
 
-    // Додаємо лише нові завдання, яких ще немає в this.tasks
-    this.tasks = [
-      ...this.tasks.filter(task => !formattedTasks.some(newTask => newTask.id === task.id)),
-      ...formattedTasks
-    ];
-    this.filteredTasks = this.tasks;
-  } catch (error) {
-    console.error('Помилка при синхронізації завдань з Trello:', error);
-  }
-  this.isMenuVisible = false;
-},
+      this.isMenuVisible = false;
+    },
 
-closeMenuOnOutsideClick(event) {
+    closeMenuOnOutsideClick(event) {
       const menu = this.$refs.menu;
       if (menu && !menu.contains(event.target) && this.isMenuVisible) {
-        this.isMenuVisible = false; // Закрити меню
+        this.isMenuVisible = false;
       }
     },
+  },
+
   mounted() {
-    // Додавання обробника події для натискання на будь-яке місце
     document.addEventListener('click', this.closeMenuOnOutsideClick);
   },
-  beforeDestroy() {
-    // Видалення обробника події при знищенні компонента
+
+  beforeUnmount() {
+    // Remove event listener when component is about to unmount
     document.removeEventListener('click', this.closeMenuOnOutsideClick);
   },
-    async syncTaskToTrello(task) {
-      try {
-        const response = await fetch('/api/trello/tasks', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(task),
-        });
-        if (!response.ok) throw new Error('Failed to sync task to Trello');
-        console.log('Завдання синхронізовано з Trello:', await response.json());
-      } catch (error) {
-        console.error('Помилка при синхронізації завдання з Trello:', error);
-      }
-    },
+
+  async syncTaskToTrello(task) {
+    try {
+      const response = await fetch('/api/trello/tasks', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(task),
+      });
+      if (!response.ok) throw new Error('Failed to sync task to Trello');
+      console.log('Task synced to Trello:', await response.json());
+    } catch (error) {
+      console.error('Error syncing task to Trello:', error);
+    }
   },
   created() {
     if (this.isAuthenticated) {
       this.fetchTasks();
     }
-  },
+  }
 };
 </script>
+
+
 
 <style>
 

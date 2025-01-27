@@ -1,14 +1,14 @@
 from flask import Flask, jsonify, request
 from pymongo import MongoClient
 from bson import ObjectId
-from flask_cors import CORS
+from flask_cors import CORS, cross_origin
 import requests
 from dotenv import load_dotenv
 import os
 
 # Ініціалізація Flask застосунку
 app = Flask(__name__)
-CORS(app)
+CORS(app)  # Додаємо CORS для всіх ендпоінтів
 
 # Завантаження змінних середовища
 load_dotenv()
@@ -40,6 +40,7 @@ def serialize_task(task):
 
 # Ендпоінт для отримання завдань
 @app.route('/api/tasks', methods=['GET'])
+@cross_origin()  # Додаємо CORS для цього ендпоінта
 def get_tasks():
     tasks = tasks_collection.find()
     return jsonify([serialize_task(task) for task in tasks]), 200
@@ -47,6 +48,7 @@ def get_tasks():
 
 # Ендпоінт для додавання нового завдання
 @app.route('/api/tasks', methods=['POST'])
+@cross_origin()  # Додаємо CORS для цього ендпоінта
 def add_task():
     task = request.json
     if not task or not task.get("title"):
@@ -87,33 +89,39 @@ def add_task():
 # Ендпоінт для оновлення завдання
 @app.route('/api/tasks/<task_id>', methods=['PUT'])
 def update_task(task_id):
-    if not ObjectId.is_valid(task_id):
-        return jsonify({"error": "Invalid task ID"}), 400
+    data = request.get_json()
+    completed = data.get('completed', None)
+    
+    print(f"Запит на оновлення завдання: task_id={task_id}, completed={completed}")
+    
+    if completed is None:
+        return jsonify({"error": "Missing 'completed' status in the request"}), 400
+    
+    # Оновлення завдання в MongoDB
+    result = tasks_collection.update_one(
+        {"_id": ObjectId(task_id)},
+        {"$set": {"completed": completed}}
+    )
 
-    task_data = request.json
-    update_data = {k: v for k, v in task_data.items() if k in ["title", "description", "due_date", "priority", "completed"]}
-
-    existing_task = tasks_collection.find_one({"_id": ObjectId(task_id)})
-    if not existing_task:
+    print(f"Результат оновлення: matched_count={result.matched_count}, modified_count={result.modified_count}")
+    
+    if result.matched_count == 0:
         return jsonify({"error": "Task not found"}), 404
-
-    trello_id = existing_task.get("trello_task_id")
-    if trello_id:
-        trello_response = update_trello_task(trello_id, update_data)
-        if trello_response.get("error"):
-            return jsonify(trello_response), 500
-
-    try:
-        tasks_collection.update_one({"_id": ObjectId(task_id)}, {"$set": update_data})
-        updated_task = tasks_collection.find_one({"_id": ObjectId(task_id)})
-        return jsonify(serialize_task(updated_task)), 200
-    except Exception as e:
-        app.logger.error(f"Error updating task in MongoDB: {str(e)}")
-        return jsonify({"error": "Failed to update task in database"}), 500
-
-
+    
+    # Отримуємо оновлене завдання
+    updated_task = tasks_collection.find_one({"_id": ObjectId(task_id)})
+    
+    return jsonify({
+        "id": str(updated_task["_id"]),
+        "title": updated_task["title"],
+        "description": updated_task["description"],
+        "completed": updated_task["completed"],
+        "due_date": updated_task.get("due_date"),
+        "priority": updated_task.get("priority", "Medium"),
+    })
 # Ендпоінт для видалення завдання
 @app.route('/api/tasks/<task_id>', methods=['DELETE'])
+@cross_origin()  # Додаємо CORS для цього ендпоінта
 def delete_task(task_id):
     if not ObjectId.is_valid(task_id):
         return jsonify({"error": "Invalid task ID"}), 400
@@ -135,6 +143,7 @@ def delete_task(task_id):
 
 
 @app.route('/sync-task', methods=['POST', 'OPTIONS'])
+@cross_origin()  # Додаємо CORS для цього ендпоінта
 def sync_task():
     if request.method == 'OPTIONS':
         # Обробка CORS
@@ -150,8 +159,10 @@ def sync_task():
     # Синхронізація логіки (додайте ваш код тут)
     return jsonify({"message": "Task synced successfully!"}), 200
 
+
 # Ендпоінт для отримання завдань із Trello та збереження їх у базі даних
 @app.route('/api/trello/tasks/<list_id>', methods=['GET'])
+@cross_origin()  # Додаємо CORS для цього ендпоінта
 def get_trello_tasks(list_id):
     url = f"https://api.trello.com/1/lists/{list_id}/cards"
     params = {
@@ -162,7 +173,7 @@ def get_trello_tasks(list_id):
         response = requests.get(url, params=params)
         if response.status_code == 200:
             trello_tasks = response.json()
-            
+
             # Збереження завдань у MongoDB, якщо їх немає
             for task in trello_tasks:
                 existing_task = tasks_collection.find_one({"trello_task_id": task["id"]})
@@ -178,13 +189,14 @@ def get_trello_tasks(list_id):
                     }
                     # Збереження нового завдання
                     tasks_collection.insert_one(new_task)
-            
+
             return jsonify(trello_tasks), 200
         else:
             return jsonify({"error": "Failed to fetch tasks from Trello"}), response.status_code
     except Exception as e:
         app.logger.error(f"Error fetching tasks from Trello: {str(e)}")
         return jsonify({"error": "Failed to fetch tasks from Trello"}), 500
+
 
 # Допоміжна функція для синхронізації завдання з Trello
 def sync_task_to_trello(task):
@@ -202,52 +214,45 @@ def sync_task_to_trello(task):
         if response.status_code == 200:
             return response.json()
         else:
-            return {"error": f"Trello error: {response.status_code} - {response.text}"}
+            return {"error": "Failed to create task on Trello", "details": response.json()}
     except Exception as e:
-        return {"error": f"Trello sync failed: {str(e)}"}
+        app.logger.error(f"Error syncing task with Trello: {str(e)}")
+        return {"error": "Failed to sync task with Trello"}
 
 
-# Допоміжна функція для оновлення завдання в Trello
-def update_trello_task(trello_id, update_data):
-    url = f"https://api.trello.com/1/cards/{trello_id}"
+# Допоміжна функція для оновлення завдання на Trello
+def update_trello_task(trello_task_id, update_data):
+    url = f"https://api.trello.com/1/cards/{trello_task_id}"
     params = {
         "key": TRELLO_API_KEY,
         "token": TRELLO_TOKEN,
     }
-    data = {
-        "name": update_data.get("title"),
-        "desc": update_data.get("description"),
-        "due": update_data.get("due_date"),
-    }
+    params.update(update_data)  # Додаємо оновлені дані
     try:
-        response = requests.put(url, params=params, json=data)
+        response = requests.put(url, data=params)
         if response.status_code == 200:
             return response.json()
         else:
-            return {"error": f"Trello update failed: {response.status_code} - {response.text}"}
+            return {"error": "Failed to update task on Trello", "details": response.json()}
     except Exception as e:
-        return {"error": f"Trello update failed: {str(e)}"}
+        app.logger.error(f"Error updating task on Trello: {str(e)}")
+        return {"error": "Failed to update task on Trello"}
 
 
 # Допоміжна функція для видалення завдання з Trello
-def delete_trello_task(trello_id):
-    url = f"https://api.trello.com/1/cards/{trello_id}"
+def delete_trello_task(trello_task_id):
+    url = f"https://api.trello.com/1/cards/{trello_task_id}"
     params = {
         "key": TRELLO_API_KEY,
         "token": TRELLO_TOKEN,
     }
     try:
         response = requests.delete(url, params=params)
-        if response.status_code == 200:
-            return True
-        else:
-            app.logger.error(f"Failed to delete task in Trello: {response.status_code} - {response.text}")
-            return False
+        if response.status_code != 200:
+            app.logger.error(f"Failed to delete task from Trello: {response.text}")
     except Exception as e:
         app.logger.error(f"Error deleting task from Trello: {str(e)}")
-        return False
-
 
 if __name__ == '__main__':
-    app.run(debug=True, threaded=True)
+    app.run(debug=True)
 
