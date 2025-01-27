@@ -9,21 +9,22 @@
   },
   "dependencies": {
     "@vue/cli-service": "^5.0.8",
-    "@vue/compiler-sfc": "^3.5.13",
+    "axios": "^1.7.9",
     "core-js": "^3.8.3",
     "eslint-plugin-vue": "^9.0.0",
     "vue": "^3.2.13"
   },
   "resolutions": {
-  "util": "0.12.5"
-},
+    "util": "0.12.5"
+  },
   "devDependencies": {
     "@babel/core": "^7.12.16",
     "@babel/eslint-parser": "^7.12.16",
     "@vue/cli-plugin-babel": "~5.0.0",
     "@vue/cli-plugin-eslint": "^3.8.0",
+    "@vue/compiler-sfc": "^3.5.13",
     "eslint": "^7.32.0",
-    "webpack": "^5.97.1"
+    "typescript": "^5.7.3"
   },
   "eslintConfig": {
     "root": true,
@@ -45,5 +46,4 @@
     "not dead",
     "not ie 11"
   ]
-  
 }
