@@ -1,3 +1,4 @@
+
 <template>
   <div id="app">
     <!-- Компонент LoginForm, який показується, якщо користувач не автентифікований -->
@@ -34,6 +35,7 @@
             :filterCriteria="filterCriteria"
             @openTask="openTask"
             @showAddModal="showAddTaskModal"
+            @close="closeModal"
           />
           <TaskModal
             v-if="showModal"
