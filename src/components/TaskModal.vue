@@ -1,47 +1,47 @@
 <template>
   <div class="modal">
     <div class="modal-content">
-      <h2>{{ mode === 'add' ? 'Нова задача' : 'Редагувати задачу' }}</h2>
+      <h2>{{ mode === 'add' ? 'New task' : 'Edit task' }}</h2>
       <form @submit.prevent="submitForm">
         <div class="form-group">
-          <input type="text" v-model="localTask.title" placeholder="Заголовок" required />
-          <span v-if="submitted && !localTask.title" class="error">Заповніть це поле</span>
+          <input type="text" v-model="localTask.title" placeholder="Title" required />
+          <span v-if="submitted && !localTask.title" class="error">Fill in this field</span>
         </div>
 
         <div class="form-group">
-          <textarea v-model="localTask.description" placeholder="Опис"></textarea>
+          <textarea v-model="localTask.description" placeholder="Description"></textarea>
         </div>
 
         <div class="form-group">
           <input type="date" v-model="localTask.due_date" required />
-          <span v-if="submitted && !localTask.due_date" class="error">Заповніть це поле</span>
+          <span v-if="submitted && !localTask.due_date" class="error">Fill in this field</span>
         </div>
 
         <div class="form-group">
           <select v-model="localTask.priority" required>
-            <option value="" disabled>Оберіть пріоритет</option>
+            <option value="" disabled>Select priority</option>
             <option value="Low">Low</option>
             <option value="Medium">Medium</option>
             <option value="High">High</option>
           </select>
-          <span v-if="submitted && !localTask.priority" class="error">Оберіть пріоритет</span>
+          <span v-if="submitted && !localTask.priority" class="error">Select priority</span>
         </div>
 
         <div class="form-group">
           <label>
-            <input type="checkbox" v-model="localTask.syncToTrello" /> Синхронізувати з Trello
+            <input type="checkbox" v-model="localTask.syncToTrello" /> Synchronize with Trello
           </label>
         </div>
 
         <div class="modal-buttons">
-          <button type="submit">Зберегти</button>
-          <button type="button" @click="$emit('close')">Закрити</button>
+          <button type="submit">Save</button>
+          <button type="button" @click="$emit('close')">Close</button>
           <button 
             v-if="mode === 'edit'" 
             type="button" 
             @click="$emit('delete', localTask)"
           >
-            Видалити
+            Delete
           </button>
         </div>
       </form>
