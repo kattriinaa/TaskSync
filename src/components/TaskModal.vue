@@ -128,6 +128,7 @@ export default {
         console.error('Не вдалося отримати оновлені завдання:', error);
       }
     },
+    
 
     markAsCompleted() {
       this.localTask.completed = true; // Встановлюємо статус виконаного завдання

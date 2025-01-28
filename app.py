@@ -87,39 +87,41 @@ def add_task():
         return jsonify({"error": "Failed to save task to database"}), 500
 
 
-# Ендпоінт для оновлення завдання
 @app.route('/api/tasks/<task_id>', methods=['PUT'])
+@cross_origin()
 def update_task(task_id):
     data = request.get_json()
-    completed = data.get('completed', None)
+    if not data:
+        return jsonify({"error": "No data provided"}), 400
     
-    print(f"Запит на оновлення завдання: task_id={task_id}, completed={completed}")
+    update_fields = {}
     
-    if completed is None:
-        return jsonify({"error": "Missing 'completed' status in the request"}), 400
+    if 'completed' in data:
+        update_fields['completed'] = data['completed']
     
-    # Оновлення завдання в MongoDB
+    if 'due_date' in data:
+        update_fields['due_date'] = data['due_date']
+    
+    if 'priority' in data:
+        update_fields['priority'] = data['priority']
+    
+    if 'description' in data:
+        update_fields['description'] = data['description']
+    
+    if not update_fields:
+        return jsonify({"error": "No valid fields to update"}), 400
+    
     result = tasks_collection.update_one(
         {"_id": ObjectId(task_id)},
-        {"$set": {"completed": completed}}
+        {"$set": update_fields}
     )
-
-    print(f"Результат оновлення: matched_count={result.matched_count}, modified_count={result.modified_count}")
     
     if result.matched_count == 0:
         return jsonify({"error": "Task not found"}), 404
-    
-    # Отримуємо оновлене завдання
+
     updated_task = tasks_collection.find_one({"_id": ObjectId(task_id)})
-    
-    return jsonify({
-        "id": str(updated_task["_id"]),
-        "title": updated_task["title"],
-        "description": updated_task["description"],
-        "completed": updated_task["completed"],
-        "due_date": updated_task.get("due_date"),
-        "priority": updated_task.get("priority", "Medium"),
-    })
+    return jsonify(serialize_task(updated_task)), 200
+
 # Ендпоінт для видалення завдання
 @app.route('/api/tasks/<task_id>', methods=['DELETE'])
 @cross_origin()  # Додаємо CORS для цього ендпоінта
