@@ -7,12 +7,6 @@
       </button>
 
       <div v-if="filtersVisible" class="filters">
-        <select v-model="filterStatus">
-          <option value="">All Status</option>
-          <option value="todo">To Do</option>
-          <option value="done">Done</option>
-          <option value="overdue">Overdue</option>
-        </select>
 
         <select v-model="filterDueDate">
           <option value="">All Dates</option>
@@ -115,7 +109,6 @@ export default {
   },
   data() {
     return {
-      filterStatus: '',  // Фільтр за статусом
       filterDueDate: '', // Фільтр за датою
       filtersVisible: false,  // Перемикання видимості фільтрів
     };
@@ -145,12 +138,7 @@ export default {
 },
   methods: {
     applyFilters(task) {
-      // Фільтрація за статусом
-      if (this.filterStatus) {
-        if (this.filterStatus === 'todo' && task.completed) return false;
-        if (this.filterStatus === 'done' && !task.completed) return false;
-        if (this.filterStatus === 'overdue' && new Date(task.due_date) > new Date()) return false;
-      }
+      
 
       // Фільтрація за датою
       if (this.filterDueDate) {
@@ -214,18 +202,20 @@ export default {
 }
 
 .filters-toggle {
-  background-color: #007bff;
+  background: linear-gradient(135deg, #007bff, #06294f);
+  color: white;
+  border: none;
   color: white;
   border: none;
   padding: 10px 20px;
   font-size: 16px;
   cursor: pointer;
-  border-radius: 5px;
+  border-radius: 10px;
   transition: background-color 0.3s;
 }
 
 .filters-toggle:hover {
-  background-color: #0056b3;
+  background: linear-gradient(135deg, #0056b3, #06294f);
 }
 
 .filters {
