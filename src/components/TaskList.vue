@@ -1,10 +1,33 @@
 <template>
   <div class="task-board">
+    <!-- Кнопка для фільтрів -->
+    <div class="filters-container">
+      <button class="filters-toggle" @click="toggleFilters">
+        Filters
+      </button>
+
+      <div v-if="filtersVisible" class="filters">
+        <select v-model="filterStatus">
+          <option value="">All Status</option>
+          <option value="todo">To Do</option>
+          <option value="done">Done</option>
+          <option value="overdue">Overdue</option>
+        </select>
+
+        <select v-model="filterDueDate">
+          <option value="">All Dates</option>
+          <option value="today">Today</option>
+          <option value="tomorrow">Tomorrow</option>
+          <option value="nextWeek">Next Week</option>
+        </select>
+      </div>
+    </div>
+
     <!-- Стовпці для завдань -->
     <div class="column">
-      <h2>Do</h2>
+      <h2>To Do</h2>
       <div
-        v-for="task in todoTasks"
+        v-for="task in filteredTodoTasks"
         :key="task.id"
         class="task-card"
         :class="{ completed: task.completed, important: task.priority === 'High' }"
@@ -12,7 +35,9 @@
       >
         <h3>{{ task.title }}</h3>
         <p>{{ task.description }}</p>
-        <small>Дата: {{ task.due_date }}</small>
+        <small>Due: {{ formatDate(task.due_date) }}</small>
+
+        <p v-if="task.completed_at">Completed: {{ formatDate(task.completed_at) }}</p>
 
         <div class="checkbox-container" @click.stop="toggleTaskCompletion(task)">
           <input 
@@ -27,7 +52,7 @@
     <div class="column">
       <h2>Important</h2>
       <div
-        v-for="task in importantTasks"
+        v-for="task in filteredImportantTasks"
         :key="task.id"
         class="task-card"
         :class="{ completed: task.completed, important: task.priority === 'High' }"
@@ -35,7 +60,9 @@
       >
         <h3>{{ task.title }}</h3>
         <p>{{ task.description }}</p>
-        <small>Дата: {{ task.due_date }}</small>
+        <small>Due: {{ formatDate(task.due_date) }}</small>
+        <!-- Виведення дати виконання -->
+        <p v-if="task.completed_at">Completed: {{ formatDate(task.completed_at) }}</p>
 
         <div class="checkbox-container" @click.stop="toggleTaskCompletion(task)">
           <input 
@@ -50,7 +77,7 @@
     <div class="column">
       <h2>Done</h2>
       <div
-        v-for="task in doneTasks"
+        v-for="task in filteredDoneTasks"
         :key="task.id"
         class="task-card"
         :class="{ completed: task.completed, important: task.priority === 'High' }"
@@ -58,7 +85,10 @@
       >
         <h3>{{ task.title }}</h3>
         <p>{{ task.description }}</p>
-        <small>Дата: {{ task.due_date }}</small>
+
+        <!-- Замінили на окремі рядки -->
+        <p><strong>Due:</strong> {{ formatDate(task.due_date) }}</p>
+        <p v-if="task.completed_at"><strong>Completed:</strong> {{ formatDate(task.completed_at) }}</p>
 
         <div class="checkbox-container" @click.stop="toggleTaskCompletion(task)">
           <input 
@@ -74,6 +104,7 @@
 
 <script>
 import axios from 'axios';
+import { format } from 'date-fns';
 
 export default {
   props: {
@@ -82,47 +113,131 @@ export default {
       required: true,
     },
   },
+  data() {
+    return {
+      filterStatus: '',  // Фільтр за статусом
+      filterDueDate: '', // Фільтр за датою
+      filtersVisible: false,  // Перемикання видимості фільтрів
+    };
+  },
   computed: {
-    todoTasks() {
-      return this.tasks.filter((task) => !task.completed && task.priority !== 'High');
-    },
-    importantTasks() {
-      return this.tasks.filter((task) => task.priority === 'High' && !task.completed);
-    },
-    doneTasks() {
-      return this.tasks.filter((task) => task.completed);
-    },
+  filteredTodoTasks() {
+    return this.tasks
+      .filter(task => {
+        return !task.completed && task.priority !== 'High' && this.applyFilters(task);
+      })
+      .sort((a, b) => new Date(a.due_date) - new Date(b.due_date));  // Сортування по даті
   },
-  methods: {
-  toggleTaskCompletion(task) {
-    task.completed = !task.completed;
-    this.updateTaskCompletion(task);
+  filteredImportantTasks() {
+    return this.tasks
+      .filter(task => {
+        return task.priority === 'High' && !task.completed && this.applyFilters(task);
+      })
+      .sort((a, b) => new Date(a.due_date) - new Date(b.due_date));  // Сортування по даті
   },
-  
-  async updateTaskCompletion(task) {
-  try {
-    const response = await axios.put(`/api/tasks/${task.id}`, { completed: task.completed
-    });
-    console.log("Завдання оновлено:", response.data);
-    task.completed = response.data.completed;  // Оновлення статусу локально
-  } catch (error) {
-    console.error("Не вдалося оновити завдання:", error);
-  }
-}
+  filteredDoneTasks() {
+    return this.tasks
+      .filter(task => {
+        return task.completed && this.applyFilters(task);
+      })
+      .sort((a, b) => new Date(a.due_date) - new Date(b.due_date));  // Сортування по даті
+  },
 },
+  methods: {
+    applyFilters(task) {
+      // Фільтрація за статусом
+      if (this.filterStatus) {
+        if (this.filterStatus === 'todo' && task.completed) return false;
+        if (this.filterStatus === 'done' && !task.completed) return false;
+        if (this.filterStatus === 'overdue' && new Date(task.due_date) > new Date()) return false;
+      }
+
+      // Фільтрація за датою
+      if (this.filterDueDate) {
+        const today = new Date();
+        const taskDueDate = new Date(task.due_date);
+        
+        if (this.filterDueDate === 'today' && taskDueDate.toDateString() !== today.toDateString()) return false;
+        if (this.filterDueDate === 'tomorrow') {
+          const tomorrow = new Date(today);
+          tomorrow.setDate(today.getDate() + 1);
+          if (taskDueDate.toDateString() !== tomorrow.toDateString()) return false;
+        }
+        if (this.filterDueDate === 'nextWeek') {
+          const nextWeek = new Date(today);
+          nextWeek.setDate(today.getDate() + 7);
+          if (taskDueDate.getTime() > nextWeek.getTime()) return false;
+        }
+      }
+      return true;
+    },
+    toggleFilters() {
+      this.filtersVisible = !this.filtersVisible;
+    },
+    toggleTaskCompletion(task) {
+      task.completed = !task.completed;
+      if (task.completed) {
+        task.completed_at = new Date().toISOString(); // Встановлюємо дату виконання
+      } else {
+        task.completed_at = null; // Скидаємо дату виконання
+      }
+      this.updateTaskCompletion(task);
+    },
+  
+    async updateTaskCompletion(task) {
+      try {
+        const response = await axios.put(`/api/tasks/${task.id}`, { 
+          completed: task.completed, 
+          completed_at: task.completed_at 
+        });
+        console.log("Завдання оновлено:", response.data);
+        task.completed = response.data.completed;  // Оновлення статусу локально
+        task.completed_at = response.data.completed_at; // Оновлення дати виконання
+      } catch (error) {
+        console.error("Не вдалося оновити завдання:", error);
+      }
+    },
+    formatDate(date) {
+      return format(new Date(date), 'yyyy-MM-dd'); // Перетворення в формат "2025-01-28"
+    },
+  },
 };
 </script>
 
 <style scoped>
-/* Глобальні стилі для body або html для прокрутки */
-html, body {
-  margin: 0;
-  padding: 0;
-  overflow-x: hidden; /* Приховує горизонтальну прокрутку */
-  overflow-y: auto; /* Дозволяє вертикальну прокрутку */
-  width: 100%;
-  height: 100%;
-  box-sizing: border-box; /* Враховує padding у розмірах */
+/* Стилі для фільтрів */
+.filters-container {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  margin-bottom: 20px;
+}
+
+.filters-toggle {
+  background-color: #007bff;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  font-size: 16px;
+  cursor: pointer;
+  border-radius: 5px;
+  transition: background-color 0.3s;
+}
+
+.filters-toggle:hover {
+  background-color: #0056b3;
+}
+
+.filters {
+  display: flex;
+  gap: 20px;
+}
+
+.filters select {
+  padding: 10px;
+  font-size: 16px;
+  border: 1px solid #ddd;
+  border-radius: 5px;
 }
 
 /* Основні стилі для дошки завдань */
@@ -224,5 +339,22 @@ html, body {
   left: 6px;
   font-size: 14px;
   color: white;
+}
+
+/* Адаптивність для мобільних пристроїв */
+@media (max-width: 768px) {
+  .filters-container {
+    flex-direction: column;
+  }
+
+  .filters {
+    flex-direction: column;
+    gap: 10px;
+    width: 100%;
+  }
+
+  .filters-toggle {
+    width: 100%;
+  }
 }
 </style>
