@@ -7,7 +7,18 @@
       </button>
 
       <div v-if="filtersVisible" class="filters">
+        <!-- Фільтр по місяцю -->
+        <select v-model="filterMonth">
+          <option value="">All Months</option>
+          <option v-for="month in months" :key="month.value" :value="month.value">
+            {{ month.name }}
+          </option>
+        </select>
 
+        <!-- Фільтр по конкретній даті -->
+        <input type="date" v-model="filterDate" />
+        
+        <!-- Останній фільтр -->
         <select v-model="filterDueDate">
           <option value="">All Dates</option>
           <option value="today">Today</option>
@@ -30,9 +41,7 @@
         <h3>{{ task.title }}</h3>
         <p>{{ task.description }}</p>
         <small>Due: {{ formatDate(task.due_date) }}</small>
-
         <p v-if="task.completed_at">Completed: {{ formatDate(task.completed_at) }}</p>
-
         <div class="checkbox-container" @click.stop="toggleTaskCompletion(task)">
           <input 
             type="checkbox" 
@@ -43,6 +52,7 @@
       </div>
     </div>
 
+    <!-- Решта колонок -->
     <div class="column">
       <h2>Important</h2>
       <div
@@ -55,9 +65,7 @@
         <h3>{{ task.title }}</h3>
         <p>{{ task.description }}</p>
         <small>Due: {{ formatDate(task.due_date) }}</small>
-        <!-- Виведення дати виконання -->
         <p v-if="task.completed_at">Completed: {{ formatDate(task.completed_at) }}</p>
-
         <div class="checkbox-container" @click.stop="toggleTaskCompletion(task)">
           <input 
             type="checkbox" 
@@ -79,11 +87,8 @@
       >
         <h3>{{ task.title }}</h3>
         <p>{{ task.description }}</p>
-
-        <!-- Замінили на окремі рядки -->
         <p><strong>Due:</strong> {{ formatDate(task.due_date) }}</p>
         <p v-if="task.completed_at"><strong>Completed:</strong> {{ formatDate(task.completed_at) }}</p>
-
         <div class="checkbox-container" @click.stop="toggleTaskCompletion(task)">
           <input 
             type="checkbox" 
@@ -110,41 +115,65 @@ export default {
   data() {
     return {
       filterDueDate: '', // Фільтр за датою
+      filterMonth: '', // Фільтр по місяцю
+      filterDate: '', // Введення конкретної дати
       filtersVisible: false,  // Перемикання видимості фільтрів
+      months: [
+        { value: '01', name: 'January' },
+        { value: '02', name: 'February' },
+        { value: '03', name: 'March' },
+        { value: '04', name: 'April' },
+        { value: '05', name: 'May' },
+        { value: '06', name: 'June' },
+        { value: '07', name: 'July' },
+        { value: '08', name: 'August' },
+        { value: '09', name: 'September' },
+        { value: '10', name: 'October' },
+        { value: '11', name: 'November' },
+        { value: '12', name: 'December' },
+      ],
     };
   },
   computed: {
-  filteredTodoTasks() {
-    return this.tasks
-      .filter(task => {
-        return !task.completed && task.priority !== 'High' && this.applyFilters(task);
-      })
-      .sort((a, b) => new Date(a.due_date) - new Date(b.due_date));  // Сортування по даті
+    filteredTodoTasks() {
+      return this.tasks
+        .filter(task => {
+          return !task.completed && task.priority !== 'High' && this.applyFilters(task);
+        })
+        .sort((a, b) => new Date(a.due_date) - new Date(b.due_date));
+    },
+    filteredImportantTasks() {
+      return this.tasks
+        .filter(task => {
+          return task.priority === 'High' && !task.completed && this.applyFilters(task);
+        })
+        .sort((a, b) => new Date(a.due_date) - new Date(b.due_date));
+    },
+    filteredDoneTasks() {
+      return this.tasks
+        .filter(task => {
+          return task.completed && this.applyFilters(task);
+        })
+        .sort((a, b) => new Date(a.due_date) - new Date(b.due_date));
+    },
   },
-  filteredImportantTasks() {
-    return this.tasks
-      .filter(task => {
-        return task.priority === 'High' && !task.completed && this.applyFilters(task);
-      })
-      .sort((a, b) => new Date(a.due_date) - new Date(b.due_date));  // Сортування по даті
-  },
-  filteredDoneTasks() {
-    return this.tasks
-      .filter(task => {
-        return task.completed && this.applyFilters(task);
-      })
-      .sort((a, b) => new Date(a.due_date) - new Date(b.due_date));  // Сортування по даті
-  },
-},
   methods: {
     applyFilters(task) {
-      
+      const today = new Date();
+      const taskDueDate = new Date(task.due_date);
 
-      // Фільтрація за датою
+      // Фільтрація за конкретною датою
+      if (this.filterDate && taskDueDate.toDateString() !== new Date(this.filterDate).toDateString()) {
+        return false;
+      }
+
+      // Фільтрація за місяцем
+      if (this.filterMonth && taskDueDate.getMonth() + 1 !== parseInt(this.filterMonth)) {
+        return false;
+      }
+
+      // Фільтрація за іншими умовами (сьогодні, завтра, наступний тиждень)
       if (this.filterDueDate) {
-        const today = new Date();
-        const taskDueDate = new Date(task.due_date);
-        
         if (this.filterDueDate === 'today' && taskDueDate.toDateString() !== today.toDateString()) return false;
         if (this.filterDueDate === 'tomorrow') {
           const tomorrow = new Date(today);
@@ -157,6 +186,7 @@ export default {
           if (taskDueDate.getTime() > nextWeek.getTime()) return false;
         }
       }
+
       return true;
     },
     toggleFilters() {
@@ -171,7 +201,6 @@ export default {
       }
       this.updateTaskCompletion(task);
     },
-  
     async updateTaskCompletion(task) {
       try {
         const response = await axios.put(`/api/tasks/${task.id}`, { 
@@ -179,14 +208,14 @@ export default {
           completed_at: task.completed_at 
         });
         console.log("Завдання оновлено:", response.data);
-        task.completed = response.data.completed;  // Оновлення статусу локально
-        task.completed_at = response.data.completed_at; // Оновлення дати виконання
+        task.completed = response.data.completed;
+        task.completed_at = response.data.completed_at;
       } catch (error) {
         console.error("Не вдалося оновити завдання:", error);
       }
     },
     formatDate(date) {
-      return format(new Date(date), 'yyyy-MM-dd'); // Перетворення в формат "2025-01-28"
+      return format(new Date(date), 'yyyy-MM-dd');
     },
   },
 };
