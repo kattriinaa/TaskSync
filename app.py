@@ -204,6 +204,30 @@ def sync_task():
     # Синхронізація логіки (додайте ваш код тут)
     return jsonify({"message": "Task synced successfully!"}), 200
 
+@app.route('/api/tasks/<task_id>/sync', methods=['POST'])
+@cross_origin()
+def sync_task_with_trello(task_id):
+    task = tasks_collection.find_one({"_id": ObjectId(task_id)})
+    
+    if not task:
+        return jsonify({"error": "Task not found"}), 404
+    
+    # Перевіряємо, чи завдання вже синхронізовано з Trello
+    if "trello_task_id" in task:
+        return jsonify({"message": "Task is already synced with Trello"}), 200
+
+    # Синхронізуємо завдання з Trello
+    trello_response = sync_task_to_trello(task)
+    if trello_response.get("error"):
+        return jsonify(trello_response), 500
+
+    # Оновлюємо завдання в базі даних, додаючи trello_task_id
+    tasks_collection.update_one(
+        {"_id": ObjectId(task_id)},
+        {"$set": {"trello_task_id": trello_response["id"]}}
+    )
+
+    return jsonify({"message": "Task synced successfully with Trello!"}), 200
 
 # Ендпоінт для отримання завдань із Trello та збереження їх у базі даних
 @app.route('/api/trello/tasks/<list_id>', methods=['GET'])

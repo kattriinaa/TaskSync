@@ -339,7 +339,7 @@ body {
 }
 
 .sync-btn {
-  background: linear-gradient(45deg, #218838, #1d6d31);
+  background: linear-gradient(135deg, #007bff, #06294f);
 }
 
 .logout-btn,
@@ -350,7 +350,7 @@ body {
   color: white;
   border: none;
   margin: 5px 0;
-  border-radius: 7px;
+  border-radius: 25px;
   cursor: pointer;
 }
 
@@ -359,7 +359,7 @@ body {
 }
 
 .sync-btn:hover {
-  background: linear-gradient(45deg, #1d6d31, #2a7f3b);
+  background: linear-gradient(135deg, #0056b3, #06294f);
 }
 
 
@@ -367,7 +367,8 @@ body {
   position: fixed;
   bottom: 30px;
   right: 30px;
-  background: linear-gradient(135deg, #6a11cb, #2575fc);  color: white;
+  background: linear-gradient(135deg, #007bff, #06294f);
+  color: white;
   border: none;
   width: 60px;
   height: 60px;
@@ -379,7 +380,7 @@ body {
 
 .add-task-btn:hover {
   transform: translateY(-5px); /* Легкий підйом кнопки */
-  background: linear-gradient(135deg, #2575fc, #6a11cb); /* Зміна градієнта */
+  background: linear-gradient(135deg, #0056b3, #06294f);
   box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15); /* Підсилюємо тінь */
 }
 
@@ -390,7 +391,7 @@ body {
 
 /* Активний стан кнопки */
 .add-task-btn.active {
-  background: linear-gradient(135deg, #2575fc, #6a11cb);
+  background: linear-gradient(135deg, #0056b3, #06294f);
   box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
 }
 

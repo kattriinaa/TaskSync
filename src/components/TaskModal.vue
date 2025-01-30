@@ -1,6 +1,16 @@
 <template>
   <div class="modal">
     <div class="modal-content">
+      <!-- Кнопка синхронізації в правому верхньому кутку модального вікна -->
+      <button 
+        v-if="mode === 'edit'" 
+        class="sync-button-circle" 
+        @click="syncTaskWithTrello(task.id)"
+        aria-label="Sync with Trello"
+      >
+        <i class="fa fa-sync" aria-hidden="true"></i> <!-- Іконка синхронізації -->
+      </button>
+
       <h2>{{ mode === 'add' ? 'New task' : 'Edit task' }}</h2>
       <form @submit.prevent="submitForm">
         <div class="form-group">
@@ -27,7 +37,7 @@
           <span v-if="submitted && !localTask.priority" class="error">Select priority</span>
         </div>
 
-        <div class="form-group">
+        <div class="form-group" v-if="mode === 'add'">
           <label>
             <input type="checkbox" v-model="localTask.syncToTrello" /> Synchronize with Trello
           </label>
@@ -115,6 +125,24 @@ export default {
     }
   }
 },
+async syncTaskWithTrello(taskId) {
+    try {
+        const response = await fetch(`/api/tasks/${taskId}/sync`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+        });
+        const data = await response.json();
+        if (response.ok) {
+            alert(data.message);
+        } else {
+            alert(data.error);
+        }
+    } catch (error) {
+        console.error("Error syncing task with Trello:", error);
+    }
+}, 
 
     // Метод для отримання оновлених завдань після синхронізації
     async getUpdatedTasks() {
@@ -139,8 +167,6 @@ export default {
 };
 </script>
 
-
-
 <style>
 .modal {
   position: fixed;
@@ -156,12 +182,41 @@ export default {
 }
 
 .modal-content {
+  position: relative; /* важливо для правильного позиціонування кнопки */
   background-color: white;
   padding: 30px;
   border-radius: 12px;
   width: 500px;
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
   text-align: center;
+}
+
+.sync-button-circle {
+  position: absolute;
+  top: 15px; /* Відступ з верхнього краю */
+  right: 15px; /* Відступ з правого краю */
+  background: linear-gradient(135deg, #1a76d8, #154b85);
+  color: white;
+  font-size: 24px;
+  width: 40px;  /* Ширина кнопки */
+  height: 40px; /* Висота кнопки, яка має бути рівною ширині для ідеальної круглої форми */
+  border-radius: 50%; /* Кругла форма */
+  border: none;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  transition: background 0.3s ease;
+  z-index: 10; /* Завжди на передньому плані */
+}
+
+.sync-button-circle:hover {
+  background: linear-gradient(135deg, #007bff, #06294f);
+}
+
+.sync-button-circle i {
+  font-size: 18px; /* Розмір іконки */
 }
 
 .modal-content input,
@@ -208,7 +263,6 @@ export default {
   background: linear-gradient(135deg, #c82333, #90131f);
 }
 
-
 .error {
   color: red;
   font-size: 12px;
@@ -217,23 +271,21 @@ export default {
   display: block;
 }
 
-/* Стилі для контейнера форми */
 .form-group {
   display: flex;
-  align-items: center; /* Вирівнювання по вертикалі */
-  gap: 15px; /* Відстань між чекбоксом та текстом */
+  align-items: center;
+  gap: 15px;
   font-size: 17px;
   margin: 15px;
 }
 
-/* Стилі для чекбоксу */
 .form-group input[type="checkbox"] {
-  width: 17px; /* Ширина чекбоксу */
-  height: 17px; /* Висота чекбоксу */
-  border-radius: 4px; /* Закруглені кути */
-  border: 2px solid #007bff; /* Колір обводки */
-  background-color: white; /* Білий фон */
-  cursor: pointer; /* Курсор при наведенні */
+  width: 17px;
+  height: 17px;
+  border-radius: 4px;
+  border: 2px solid #007bff;
+  background-color: white;
+  cursor: pointer;
 }
 
 </style>

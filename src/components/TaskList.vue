@@ -222,14 +222,16 @@ export default {
 </script>
 
 <style scoped>
-/* Стилі для фільтрів */
+/* Стилі для контейнера фільтрів */
 .filters-container {
   display: flex;
   align-items: center;
   gap: 20px;
   margin-bottom: 20px;
+  flex-wrap: wrap; /* Дозволяє фільтрам розкладатися на кілька рядків, якщо не вміщаються */
 }
 
+/* Стиль кнопки для відкриття фільтрів */
 .filters-toggle {
   background: linear-gradient(135deg, #007bff, #06294f);
   color: white;
@@ -239,7 +241,7 @@ export default {
   padding: 10px 20px;
   font-size: 16px;
   cursor: pointer;
-  border-radius: 10px;
+  border-radius: 25px;
   transition: background-color 0.3s;
 }
 
@@ -247,16 +249,48 @@ export default {
   background: linear-gradient(135deg, #0056b3, #06294f);
 }
 
+/* Основні стилі для блоку фільтрів */
 .filters {
   display: flex;
-  gap: 20px;
+  gap: 15px;
+  padding: 10px 15px;
+  background-color: #f1f1f1;
+  border-radius: 10px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  flex-wrap: wrap; /* Дозволяє фільтрам переноситись */
+  max-width: 100%; /* Максимальна ширина 100% */
+  width: 100%;
 }
 
-.filters select {
-  padding: 10px;
+/* Стиль для кожного поля вибору */
+.filters select,
+.filters input[type="date"] {
+  padding: 10px 15px;
   font-size: 16px;
   border: 1px solid #ddd;
-  border-radius: 5px;
+  border-radius: 8px;
+  background-color: #fff;
+  transition: border-color 0.3s, box-shadow 0.3s;
+  width: 180px; /* Обмежуємо ширину полів вибору */
+  max-width: 100%; /* Дозволяє адаптуватися під екран */
+}
+
+/* Зміна кольору бордеру при фокусуванні */
+.filters select:focus,
+.filters input[type="date"]:focus {
+  border-color: #007bff;
+  box-shadow: 0 0 5px rgba(0, 123, 255, 0.5);
+}
+
+/* Стилі для option в селектах */
+.filters select option {
+  padding: 10px;
+  font-size: 16px;
+}
+
+/* Зміна фону для option при наведенні */
+.filters select option:hover {
+  background-color: #f1f1f1;
 }
 
 /* Основні стилі для дошки завдань */
