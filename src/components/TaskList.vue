@@ -87,7 +87,6 @@
       >
         <h3>{{ task.title }}</h3>
         <p>{{ task.description }}</p>
-        <p><strong>Due:</strong> {{ formatDate(task.due_date) }}</p>
         <p v-if="task.completed_at"><strong>Completed:</strong> {{ formatDate(task.completed_at) }}</p>
         <div class="checkbox-container" @click.stop="toggleTaskCompletion(task)">
           <input 
