@@ -77,26 +77,32 @@
     </div>
 
     <div class="column">
-      <h2>Done</h2>
-      <div
-        v-for="task in filteredDoneTasks"
-        :key="task.id"
-        class="task-card"
-        :class="{ completed: task.completed, important: task.priority === 'High' }"
-        @click="$emit('openTask', task)"
-      >
-        <h3>{{ task.title }}</h3>
-        <p>{{ task.description }}</p>
-        <p v-if="task.completed_at"><strong>Completed:</strong> {{ formatDate(task.completed_at) }}</p>
-        <div class="checkbox-container" @click.stop="toggleTaskCompletion(task)">
-          <input 
-            type="checkbox" 
-            v-model="task.completed" 
-            @change="updateTaskCompletion(task)" 
-          />
-        </div>
-      </div>
+  <h2>Done</h2>
+  <div
+    v-for="task in filteredDoneTasks"
+    :key="task.id"
+    class="task-card"
+    :class="{ completed: task.completed, important: task.priority === 'High' }"
+    @click="$emit('openTask', task)"
+  >
+    <h3>{{ task.title }}</h3>
+    <p>{{ task.description }}</p>
+    <p v-if="task.completed_at"><strong>Completed:</strong> {{ formatDate(task.completed_at) }}</p>
+
+    <!-- Приховуємо чекбокс у колонці Done -->
+    <div 
+      v-if="!task.completed" 
+      class="checkbox-container" 
+      @click.stop="toggleTaskCompletion(task)"
+    >
+      <input 
+        type="checkbox" 
+        v-model="task.completed" 
+        @change="updateTaskCompletion(task)" 
+      />
     </div>
+  </div>
+</div>
   </div>
 </template>
 

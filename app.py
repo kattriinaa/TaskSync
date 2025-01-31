@@ -150,10 +150,18 @@ def update_task(task_id):
             trello_update_data = {}
 
             # Якщо змінився опис чи дата, передаємо ці зміни в Trello
+            if 'title' in update_fields:
+                trello_update_data['name'] = update_fields['title']
             if 'description' in update_fields:
                 trello_update_data['desc'] = updated_task['description']
             if 'due_date' in update_fields:
                 trello_update_data['due'] = updated_task['due_date']
+            if 'completed' in update_fields:
+                if update_fields['completed']:
+                    trello_update_data['closed'] = True
+                    trello_update_data['idList'] = DONE_LIST_ID  # Переносимо в "Done"
+                else:
+                    trello_update_data['closed'] = False
 
             # Оновлюємо картку на Trello
             if trello_update_data:
