@@ -9,7 +9,7 @@
   },
   "dependencies": {
     "@vue/cli-service": "^5.0.8",
-    "axios": "^1.7.9",
+    "axios": "^1.8.2",
     "core-js": "^3.8.3",
     "date-fns": "^4.1.0",
     "eslint-plugin-vue": "^9.0.0",
