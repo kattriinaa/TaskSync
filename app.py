@@ -38,6 +38,7 @@ def serialize_task(task):
         "completed": task.get("completed", False),
         "completed_at": task.get("completed_at"),
         "trello_task_id": task.get("trello_task_id"),
+        "reminderDaysBefore": task.get("reminderDaysBefore"),
     }
 
 
@@ -69,6 +70,7 @@ def add_task():
         "priority": task.get("priority", "Medium"),
         "completed": False,
         "completed_at": None,  # Додаємо поле для дати виконання
+        "reminderDaysBefore": task.get("reminderDaysBefore"),
     }
     app.logger.info(f"New task to process: {new_task}")
 
@@ -119,6 +121,8 @@ def update_task(task_id):
         update_fields['due_date'] = data['due_date']
     if 'priority' in data:
         update_fields['priority'] = data['priority']
+    if 'reminderDaysBefore' in data:
+        update_fields['reminderDaysBefore'] = data['reminderDaysBefore']
 
     if update_fields:
         result = tasks_collection.update_one(
@@ -242,6 +246,7 @@ def sync_task_with_trello(task_id):
 @cross_origin()  # Додаємо CORS для цього ендпоінта
 def get_trello_tasks(list_id):
     url = f"https://api.trello.com/1/lists/{list_id}/cards"
+    
     params = {
         "key": TRELLO_API_KEY,
         "token": TRELLO_TOKEN,
@@ -310,9 +315,9 @@ def update_trello_task(trello_task_id, update_data):
         "token": TRELLO_TOKEN,
     }
     
-    # Переконайтесь, що параметр 'closed' передається як булеве значення (True або False)
+    # Переконайтесь, що параметр 'closed' передається як рядок 'true' або 'false'
     if 'closed' in update_data:
-        update_data['closed'] = update_data['closed'] is True  # Explicitly cast to True/False
+        update_data['closed'] = 'true' if update_data['closed'] else 'false'
 
     params.update(update_data)  # Додаємо оновлені дані
     

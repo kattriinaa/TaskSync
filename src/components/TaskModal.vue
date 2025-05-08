@@ -26,6 +26,15 @@
           <input type="date" v-model="localTask.due_date" required />
           <span v-if="submitted && !localTask.due_date" class="error">Fill in this field</span>
         </div>
+        <!-- Reminder field -->
+        <div class="form-group">
+          <label for="reminder">Reminder:</label>
+          <select id="reminder" v-model="localTask.reminderDaysBefore">
+            <option :value="null">No Reminder</option>
+            <option :value="0">On the same day</option>
+            <option :value="1">The day before</option>
+          </select>
+        </div>
 
         <div class="form-group">
           <select v-model="localTask.priority" required>
@@ -49,7 +58,7 @@
           <button 
             v-if="mode === 'edit'" 
             type="button" 
-            @click="$emit('delete', localTask)"
+            @click="confirmDelete"
           >
             Delete
           </button>
@@ -73,6 +82,7 @@ export default {
         priority: '',
         syncToTrello: false,
         completed: false, // Додаємо статус виконаного
+        reminderDaysBefore: null, // New: reminder (0 = same day, 1 = day before)
       }),
     },
     mode: {
@@ -106,25 +116,27 @@ export default {
       this.$emit("close");
     },
 
+    confirmDelete() {
+      this.$emit('request-delete', this.localTask);
+    },
+
     async syncTaskToBackend(task) {
   try {
-    // Виклик axios без збереження результату в змінну
     await axios.post('http://localhost:5000/sync-task', task);
-
-    // Успішна синхронізація
-    alert('Задача успішно синхронізована з Trello!');
-    this.$emit("close"); // Закриваємо модальне вікно
+        this.$emit("success", 'Task synchronized with Trello!');
+        this.$emit("close");
     await this.getUpdatedTasks();
     this.$emit("syncCompleted");
   } catch (error) {
     if (error.response && error.response.status === 400 && error.response.data.error) {
-      alert(error.response.data.error + " Будь ласка, змініть заголовок завдання.");
+          this.$emit("error", error.response.data.error + " Please change the task title.");
     } else {
-      console.error('Не вдалося синхронізувати задачу:', error);
-      alert('Не вдалося синхронізувати задачу з Trello.');
+          console.error('Failed to sync task:', error);
+          this.$emit("error", 'Failed to sync task with Trello.');
     }
   }
 },
+
 async syncTaskWithTrello(taskId) {
     try {
         const response = await fetch(`/api/tasks/${taskId}/sync`, {
@@ -135,12 +147,13 @@ async syncTaskWithTrello(taskId) {
         });
         const data = await response.json();
         if (response.ok) {
-            alert(data.message);
+          this.$emit("success", data.message);
         } else {
-            alert(data.error);
+          this.$emit("error", data.error);
         }
     } catch (error) {
         console.error("Error syncing task with Trello:", error);
+        this.$emit("error", "Failed to sync task with Trello.");
     }
 }, 
 
@@ -195,24 +208,20 @@ async syncTaskWithTrello(taskId) {
   position: absolute;
   top: 15px; /* Відступ з верхнього краю */
   right: 15px; /* Відступ з правого краю */
-  background: linear-gradient(135deg, #1a76d8, #154b85);
-  color: white;
+  color: black;
   font-size: 24px;
   width: 40px;  /* Ширина кнопки */
   height: 40px; /* Висота кнопки, яка має бути рівною ширині для ідеальної круглої форми */
   border-radius: 50%; /* Кругла форма */
-  border: none;
   display: flex;
   justify-content: center;
   align-items: center;
   cursor: pointer;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-  transition: background 0.3s ease;
   z-index: 10; /* Завжди на передньому плані */
 }
 
 .sync-button-circle:hover {
-  background: linear-gradient(135deg, #007bff, #06294f);
+  background: linear-gradient(135deg,rgb(154, 154, 154),rgb(101, 103, 105));
 }
 
 .sync-button-circle i {
@@ -288,4 +297,47 @@ async syncTaskWithTrello(taskId) {
   cursor: pointer;
 }
 
+/* --- DARK MODE STYLES --- */
+.dark-mode .modal-content {
+  background-color: #232323;
+  color: #f5f5f5;
+  box-shadow: 0 4px 18px rgba(0,0,0,0.5);
+}
+.dark-mode .modal-content input,
+.dark-mode .modal-content textarea,
+.dark-mode .modal-content select {
+  background: #181818;
+  color: #fff;
+  border: 1px solid #444;
+}
+.dark-mode .modal-content input:focus,
+.dark-mode .modal-content textarea:focus,
+.dark-mode .modal-content select:focus {
+  border: 1.5px solid #3887fa;
+}
+.dark-mode .modal-content button[type='submit'] {
+  background: linear-gradient(135deg, #1976d2, #1565c0);
+  color: #fff;
+}
+.dark-mode .modal-content button[type='submit']:hover {
+  background: linear-gradient(135deg, #3887fa, #1976d2);
+}
+.dark-mode .modal-content button[type='button'] {
+  background: linear-gradient(135deg, #b71c1c, #90131f);
+  color: #fff;
+}
+.dark-mode .modal-content button[type='button']:hover {
+  background: linear-gradient(135deg, #ef5350, #b71c1c);
+}
+.dark-mode .sync-button-circle {
+  background: linear-gradient(135deg, #1976d2, #1565c0);
+  color: #fff;
+}
+.dark-mode .sync-button-circle:hover {
+  background: linear-gradient(135deg, #3887fa, #1976d2);
+}
+.dark-mode .form-group input[type="checkbox"] {
+  background: #232323;
+  border: 2px solid #3887fa;
+}
 </style>

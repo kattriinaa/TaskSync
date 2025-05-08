@@ -54,17 +54,18 @@ export default {
 .login-container h1 {
   font-family: 'Roboto', sans-serif;
   font-size: 28px;
-  color: #333;
+  color: #009688;
   margin-bottom: 30px;
   text-align: center;
 }
 
 /* Стилі для інпутів */
-.login-container input {
+.login-container input[type="text"],
+.login-container input[type="password"] {
   width: 100%;
   padding: 14px;
   margin-bottom: 20px;
-  border: 1px solid #ddd;
+  border: 1.5px solid #009688;
   border-radius: 6px;
   font-size: 16px;
   background-color: #f9f9f9;
@@ -74,35 +75,35 @@ export default {
 }
 
 /* Плавна зміна кольору межі та фону при фокусуванні */
-.login-container input:focus {
-  border-color: #007bff;
-  background-color: #e7f3ff;
-  outline: none;
+.login-container input[type="text"]:focus,
+.login-container input[type="password"]:focus {
+  border: 2px solid #43a047;
+  box-shadow: 0 0 5px #43a047;
 }
 
 /* Стилі для кнопки */
-.login-container button {
+.login-container button[type="submit"] {
   width: 100%;
-  padding: 14px;
-  font-size: 16px;
-  background-color: #007bff;
-  color: white;
+  padding: 12px 0;
+  font-size: 1.1em;
+  font-weight: 600;
+  background-color: #009688;
+  color: #fff;
   border: none;
-  border-radius: 6px;
+  border-radius: 8px;
   cursor: pointer;
-  transition: background-color 0.3s ease, transform 0.3s ease;
-  box-sizing: border-box; /* Забезпечує рівномірне відступлення */
+  transition: background 0.2s, color 0.2s;
 }
 
 /* Ефект при наведенні на кнопку */
-.login-container button:hover {
-  background-color: #0056b3;
-  transform: translateY(-2px); /* Легке підняття кнопки */
+.login-container button[type="submit"]:hover {
+  background-color: #43a047;
+  color: #fff;
 }
 
 /* Ефект при натисканні на кнопку */
 .login-container button:active {
-  background-color: #004085;
+  background-color: #00695c;
   transform: translateY(0); /* Відновлення положення */
 }
 </style>

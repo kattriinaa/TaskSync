@@ -13,7 +13,9 @@
     "core-js": "^3.8.3",
     "date-fns": "^4.1.0",
     "eslint-plugin-vue": "^9.0.0",
-    "vue": "^3.2.13"
+    "pinia": "^3.0.2",
+    "vue": "^3.2.13",
+    "vue-router": "^4.5.1"
   },
   "resolutions": {
     "util": "0.12.5"
