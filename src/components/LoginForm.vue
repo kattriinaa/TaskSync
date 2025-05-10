@@ -4,6 +4,9 @@
     <form @submit.prevent="loginHandler">
       <input type="text" v-model="credentials.username" placeholder="Username" required />
       <input type="password" v-model="credentials.password" placeholder="Password" required />
+
+      <p v-if="error" class="error-message">{{ error }}</p>
+
       <button type="submit">Login</button>
     </form>
   </div>
@@ -14,29 +17,45 @@ export default {
   props: {
     onLogin: {
       type: Function,
-      required: true,
+      required: false, // опціонально
     },
   },
   data() {
     return {
       credentials: { username: '', password: '' },
+      error: '', // повідомлення про помилку
     };
   },
   methods: {
     loginHandler() {
-      this.onLogin(this.credentials); // Викликаємо переданий метод
+      const validUsername = 'kattrina';
+      const validPassword = 'tasksync';
+
+      if (
+        this.credentials.username === validUsername &&
+        this.credentials.password === validPassword
+      ) {
+        this.error = '';
+        if (this.onLogin) this.onLogin(this.credentials);
+        // можеш також використати router.push або emit
+      } else {
+        this.error = '❌ Invalid username or password';
+        // автоматичне очищення повідомлення через 3 секунди
+        setTimeout(() => {
+          this.error = '';
+        }, 3000);
+      }
     },
   },
 };
 </script>
 
 <style scoped>
-/* Основні стилі для контейнера */
 .login-container {
-  position: fixed; /* Встановлює фіксоване позиціонування для центрування */
+  position: fixed;
   top: 50%;
   left: 50%;
-  transform: translate(-50%, -50%); /* Переміщує вікно на половину своєї ширини та висоти */
+  transform: translate(-50%, -50%);
   background-color: #fff;
   padding: 40px;
   border-radius: 12px;
@@ -46,11 +65,10 @@ export default {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  z-index: 1000; /* Зробить вікно поверх інших елементів */
+  z-index: 1000;
   transition: all 0.3s ease-in-out;
 }
 
-/* Стилі для заголовка */
 .login-container h1 {
   font-family: 'Roboto', sans-serif;
   font-size: 28px;
@@ -59,7 +77,6 @@ export default {
   text-align: center;
 }
 
-/* Стилі для інпутів */
 .login-container input[type="text"],
 .login-container input[type="password"] {
   width: 100%;
@@ -70,18 +87,16 @@ export default {
   font-size: 16px;
   background-color: #f9f9f9;
   color: #333;
-  box-sizing: border-box; /* Забезпечує рівномірне відступлення */
+  box-sizing: border-box;
   transition: border 0.3s ease, background-color 0.3s ease;
 }
 
-/* Плавна зміна кольору межі та фону при фокусуванні */
 .login-container input[type="text"]:focus,
 .login-container input[type="password"]:focus {
   border: 2px solid #43a047;
   box-shadow: 0 0 5px #43a047;
 }
 
-/* Стилі для кнопки */
 .login-container button[type="submit"] {
   width: 100%;
   padding: 12px 0;
@@ -95,15 +110,21 @@ export default {
   transition: background 0.2s, color 0.2s;
 }
 
-/* Ефект при наведенні на кнопку */
 .login-container button[type="submit"]:hover {
   background-color: #43a047;
   color: #fff;
 }
 
-/* Ефект при натисканні на кнопку */
 .login-container button:active {
   background-color: #00695c;
-  transform: translateY(0); /* Відновлення положення */
+  transform: translateY(0);
+}
+
+.error-message {
+  color: red;
+  font-weight: 500;
+  margin-bottom: 25px;
+  font-family: 'Roboto', sans-serif;
+  text-align: center;
 }
 </style>
